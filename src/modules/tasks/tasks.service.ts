@@ -1,6 +1,6 @@
 import { Injectable, InternalServerErrorException, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, DataSource, LessThan } from 'typeorm';
+import { Repository, DataSource, LessThan, In } from 'typeorm';
 import { Task } from './entities/task.entity';
 import { CreateTaskDto } from './dto/create-task.dto';
 import { TaskFilterDto } from './dto/task-filter.dto';
@@ -108,19 +108,37 @@ export class TasksService {
     if (!result.affected) throw new NotFoundException(`Task with ID "${id}" not found`);
   }
 
-  async batchProcess(taskIds: string[], action: 'complete' | 'delete') {
-    const results = await Promise.all(
-      taskIds.map(async id => {
-        try {
-          let res;
-          if (action === 'complete') res = await this.update(id, { status: TaskStatus.COMPLETED });
-          else if (action === 'delete') await this.remove(id);
-          return { taskId: id, success: true, result: res };
-        } catch (error) {
-          return { taskId: id, success: false, error: error };
-        }
-      }),
-    );
+  async batchProcess(
+    taskIds: string[],
+    action: 'complete' | 'delete',
+  ): Promise<{ taskId: string; success: boolean; error?: string }[]> {
+    // 1. Find which tasks actually exist
+    const found = await this.tasksRepo.find({
+      where: { id: In(taskIds) },
+      select: ['id'],
+    });
+    const existingIds = found.map(t => t.id);
+    const missingIds = taskIds.filter(id => !existingIds.includes(id));
+
+    // 2. Perform bulk update or delete in a transaction
+    await this.dataSource.transaction(async manager => {
+      if (action === 'complete') {
+        await manager
+          .createQueryBuilder()
+          .update(Task)
+          .set({ status: TaskStatus.COMPLETED })
+          .whereInIds(existingIds)
+          .execute();
+      } else {
+        await manager.delete(Task, existingIds);
+      }
+    });
+
+    // 3. Build result per task
+    const results: { taskId: string; success: boolean; error?: string }[] = [];
+    existingIds.forEach(id => results.push({ taskId: id, success: true }));
+    missingIds.forEach(id => results.push({ taskId: id, success: false, error: 'Task not found' }));
+
     return results;
   }
 
