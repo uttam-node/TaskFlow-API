@@ -29,12 +29,13 @@ export class TasksService {
     });
   }
 
-  async findAll({
-    status,
-    priority,
-    page,
-    limit,
-  }: TaskFilterDto): Promise<{ data: Task[]; total: number }> {
+  async findAll({ status, priority, page, limit }: TaskFilterDto): Promise<{
+    data: Task[];
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  }> {
     const qb = this.tasksRepo.createQueryBuilder('task').leftJoinAndSelect('task.user', 'user');
 
     if (status) qb.andWhere('task.status = :status', { status });
@@ -42,7 +43,8 @@ export class TasksService {
 
     qb.skip((page - 1) * limit).take(limit);
     const [data, total] = await qb.getManyAndCount();
-    return { data, total };
+
+    return { data, total, page, limit, totalPages: Math.ceil(total / limit) };
   }
 
   async getStatistics() {
