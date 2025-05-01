@@ -15,6 +15,8 @@ import { ScheduledTasksModule } from './queues/scheduled-tasks/scheduled-tasks.m
 import { MetricsModule } from './metrics/metrics.module';
 import { APP_INTERCEPTOR } from '@nestjs/core';
 import { MetricsInterceptor } from './metrics/metrics.interceptor';
+import { RetryInterceptor } from '@common/interceptors/retry.interceptor';
+import { CircuitBreakerInterceptor } from '@common/interceptors/circuit-breaker.interceptor';
 const throttleOpts = {
   ttl: Number(process.env.THROTTLE_TTL) || 60,
   limit: Number(process.env.THROTTLE_LIMIT) || 10,
@@ -80,13 +82,15 @@ const throttleOpts = {
     // Queue processing modules
     TaskProcessorModule,
     ScheduledTasksModule,
-    MetricsModule
+    MetricsModule,
   ],
   providers: [
     {
       provide: APP_INTERCEPTOR,
       useClass: MetricsInterceptor,
     },
+    { provide: APP_INTERCEPTOR, useClass: RetryInterceptor },
+    { provide: APP_INTERCEPTOR, useClass: CircuitBreakerInterceptor },
   ],
 })
 export class AppModule {}
