@@ -49,6 +49,7 @@ export class TasksController {
   }
 
   @Get()
+  @RateLimit({ limit: 50, windowMs: 30_000 }) // 50 reqs per 30s
   @ApiOperation({ summary: 'Find all tasks with optional filtering (via CQRS)' })
   async findAll(@Query() { status, priority, page, limit }: TaskFilterDto) {
     return this.queryBus.execute(new GetTasksQuery(page, limit, status, priority));
@@ -61,6 +62,7 @@ export class TasksController {
   }
 
   @Get(':id')
+  @RateLimit({ limit: 20, windowMs: 60_000 }) // 20 reqs per 60s
   @ApiOperation({ summary: 'Get a task by ID (via CQRS)' })
   async findOne(@Param('id', ParseUUIDPipe) id: string) {
     return this.queryBus.execute(new GetTaskDetailsQuery(id));
