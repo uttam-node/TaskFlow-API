@@ -1,4 +1,9 @@
-import { Injectable, InternalServerErrorException, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  InternalServerErrorException,
+  Logger,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource, LessThan, In } from 'typeorm';
 import { Task } from './entities/task.entity';
@@ -9,15 +14,19 @@ import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 import { TaskStatus } from './enums/task-status.enum';
 import { TaskPriority } from './enums/task-priority.enum';
+import { CacheService } from '@common/services/cache.service';
 
 @Injectable()
 export class TasksService {
+  private readonly logger = new Logger(TasksService.name);
+
   constructor(
     private readonly dataSource: DataSource,
     @InjectRepository(Task)
     private readonly tasksRepo: Repository<Task>,
     @InjectQueue('task-processing')
     private readonly taskQueue: Queue,
+    private readonly cacheService: CacheService,
   ) {}
 
   async create(dto: CreateTaskDto): Promise<Task> {
@@ -73,8 +82,21 @@ export class TasksService {
   }
 
   async findOne(id: string): Promise<Task> {
+    const cacheKey = `task:${id}`;
+
+    // 1) Try cache
+    const cached = await this.cacheService.get<Task>(cacheKey);
+    if (cached) {
+      this.logger.debug(`Cache hit ${cacheKey}`);
+      return cached;
+    }
+
+    // 2) Fallback to DB
     const task = await this.tasksRepo.findOne({ where: { id }, relations: ['user'] });
     if (!task) throw new NotFoundException(`Task with ID "${id}" not found`);
+
+    // 3) Store in cache for next time
+    await this.cacheService.set<Task>(cacheKey, task, 300); // 5-min TTL
     return task;
   }
 
@@ -94,6 +116,9 @@ export class TasksService {
             status: updated.status,
           });
         }
+
+        // invalidate cache for this record
+        await this.cacheService.del(`task:${id}`);
 
         return updated;
       })
@@ -152,6 +177,9 @@ export class TasksService {
       .execute();
 
     if (!result.affected) throw new NotFoundException(`Task with ID "${id}" not found`);
+
+    // invalidate cache for this record
+    await this.cacheService.del(`task:${id}`);
     return result.raw[0] as Task;
   }
 
@@ -172,5 +200,10 @@ export class TasksService {
     const task = await this.findOne(taskId);
     // TODO: Integrate with notification service (email, SMS, etc.)
     //this.logger.log(`Notification sent for overdue task ${task.id}`);
+  }
+
+  async clearAllTasksCache() {
+    // if you had a key pattern, you might clear them here
+    await this.cacheService.clear();
   }
 }

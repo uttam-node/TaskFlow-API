@@ -42,18 +42,19 @@ const throttleOpts = {
         logging: cfg.get<string>('NODE_ENV') === 'development',
       }),
     }),
-
-    // Redis-backed cache
+    // Distributed Cache with Redis
     CacheModule.registerAsync({
+      isGlobal: true,
       imports: [ConfigModule],
       inject: [ConfigService],
       useFactory: (cfg: ConfigService) => ({
         store: redisStore,
-        host: cfg.get<string>('REDIS_HOST'),
-        port: cfg.get<number>('REDIS_PORT'),
-        ttl: cfg.get<number>('CACHE_TTL', 60),
+        socket: {
+          host: cfg.get('REDIS_HOST', 'localhost'),
+          port: cfg.get('REDIS_PORT', 6379),
+        },
+        ttl: cfg.get('CACHE_TTL', 300),
       }),
-      isGlobal: true,
     }),
 
     // Scheduling

@@ -14,6 +14,7 @@ import { TaskUpdatedHandler } from './events/handlers/task-updated.handler';
 import { GetTaskStatisticsHandler } from './queries/handlers/get-tasks-statistics.handler';
 import { TaskCreatedHandler } from './events/handlers/task-created.handler';
 import { GetTaskDetailsHandler } from './queries/handlers/get-task-details.handler';
+import { CommonModule } from '@common/common.module';
 
 @Module({
   imports: [
@@ -22,6 +23,7 @@ import { GetTaskDetailsHandler } from './queries/handlers/get-task-details.handl
       name: 'task-processing',
     }),
     CqrsModule,
+    CommonModule
   ],
   controllers: [TasksController],
   providers: [
