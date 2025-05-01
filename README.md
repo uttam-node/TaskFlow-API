@@ -121,117 +121,41 @@ The seeded database includes two users:
 
 This codebase contains a partially implemented task management API that suffers from various architectural, performance, and security issues. Your task is to analyze, refactor, and enhance the codebase to create a production-ready, scalable, and secure application.
 
-## Core Problem Areas
-
-The codebase has been intentionally implemented with several critical issues that need to be addressed:
-
-### 1. Performance & Scalability Issues
-
-- N+1 query problems throughout the application
-- Inefficient in-memory filtering and pagination that won't scale
-- Excessive database roundtrips in batch operations
-- Poorly optimized data access patterns
-
-### 2. Architectural Weaknesses
-
-- Inappropriate separation of concerns (e.g., controllers directly using repositories)
-- Missing domain abstractions and service boundaries
-- Lack of transaction management for multi-step operations
-- Tightly coupled components with high interdependency
-
-### 3. Security Vulnerabilities
-
-- Inadequate authentication mechanism with several vulnerabilities
-- Improper authorization checks that can be bypassed
-- Unprotected sensitive data exposure in error responses
-- Insecure rate limiting implementation
-
-### 4. Reliability & Resilience Gaps
-
-- Ineffective error handling strategies
-- Missing retry mechanisms for distributed operations
-- Lack of graceful degradation capabilities
-- In-memory caching that fails in distributed environments
-
-## Implementation Requirements
-
-Your implementation should address the following areas:
+## ✅ Implementation Status
 
 ### 1. Performance Optimization
-
-- Implement efficient database query strategies with proper joins and eager loading
-- Create a performant filtering and pagination system
-- Optimize batch operations with bulk database operations
-- Add appropriate indexing strategies
+- ✅  Efficient QueryBuilder filtering & pagination  
+- ✅  Bulk update/delete with single transactions  
+- ✅  Appropriate indexes on `status`, `priority`, `dueDate`  
+- ✅  Redis-backed caching (JSON serialization)  
 
 ### 2. Architectural Improvements
-
-- Implement proper domain separation and service abstractions
-- Create a consistent transaction management strategy
-- Apply SOLID principles throughout the codebase
-- Implement at least one advanced pattern (e.g., CQRS, Event Sourcing)
+- [ ] **Domain separation & service abstractions** (in progress)  
+- ✅  Consistent transaction management (TypeORM `QueryRunner`)  
+- ✅  SOLID principles throughout  
+- ✅  CQRS pattern for commands, queries, events  
 
 ### 3. Security Enhancements
-
-- Strengthen authentication with refresh token rotation
-- Implement proper authorization checks at multiple levels
-- Create a secure rate limiting system
-- Add data validation and sanitization
+- ✅  JWT + refresh-token rotation  
+- ✅  Role-based authorization guards  
+- ✅  Data validation & sanitization (class-validator/transformer)  
+- ✅  Secure error handling & sensitive-data filtering  
+- ✅  Distributed rate limiting via Redis  
 
 ### 4. Resilience & Observability
+- [ ] **Meaningful health checks** (in progress)  
+- ✅  Circuit breakers (opossum) on external calls  
+- ✅  Retry + backoff interceptors  
+- ✅  Graceful degradation for non-critical features  
+- ✅  Prometheus metrics & OpenTelemetry tracing  
 
-- Implement comprehensive error handling and recovery mechanisms
-- Add proper logging with contextual information
-- Create meaningful health checks
-- Implement at least one observability pattern
+### 5. Distributed Systems Design
+- ✅  Stateless HTTP (JWT / Redis sessions)  
+- ✅  Shared Redis for cache, rate-limit, and locks  
+- ✅  Idempotent BullMQ jobs (`jobId`)  
+- ✅  Docker & Kubernetes readiness (graceful shutdown)  
 
-## Advanced Challenge Areas
 
-For senior engineers, we expect solutions to also address:
-
-### 1. Distributed Systems Design
-
-- Create solutions that work correctly in multi-instance deployments
-- Implement proper distributed caching with invalidation strategies
-- Handle concurrent operations safely
-- Design for horizontal scaling
-
-### 2. System Reliability
-
-- Implement circuit breakers for external service calls
-- Create graceful degradation pathways for non-critical features
-- Add self-healing mechanisms
-- Design fault isolation boundaries
-
-### 3. Performance Under Load
-
-- Optimize for high throughput scenarios
-- Implement backpressure mechanisms
-- Create efficient resource utilization strategies
-- Design for predictable performance under varying loads
-
-## Evaluation Criteria
-
-Your solution will be evaluated on:
-
-1. **Problem Analysis**: How well you identify and prioritize the core issues
-2. **Technical Implementation**: The quality and cleanliness of your code
-3. **Architectural Thinking**: Your approach to solving complex design problems
-4. **Performance Improvements**: Measurable enhancements to system performance
-5. **Security Awareness**: Your identification and remediation of vulnerabilities
-6. **Testing Strategy**: The comprehensiveness of your test coverage
-7. **Documentation**: The clarity of your explanation of key decisions
-
-## Submission Guidelines
-
-1. Create a new branch for your implementation
-2. Make regular, meaningful commits that tell a story
-3. Create a pull request with a comprehensive description containing:
-   - Analysis of the core problems you identified
-   - Overview of your architectural approach
-   - Performance and security improvements made
-   - Key technical decisions and their rationale
-   - Any tradeoffs you made and why
 
 ## API Endpoints
 
@@ -240,6 +164,7 @@ The API should expose the following endpoints:
 ### Authentication
 - `POST /auth/login` - Authenticate a user
 - `POST /auth/register` - Register a new user
+- `POST /auth/refreash` - Rotate refresh token
 
 ### Tasks
 - `GET /tasks` - List tasks with filtering and pagination
@@ -249,4 +174,4 @@ The API should expose the following endpoints:
 - `DELETE /tasks/:id` - Delete a task
 - `POST /tasks/batch` - Batch operations on tasks
 
-Good luck! This challenge is designed to test the skills of experienced engineers in creating scalable, maintainable, and secure systems. 
+Thank you! 
