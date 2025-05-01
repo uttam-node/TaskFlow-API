@@ -15,8 +15,7 @@ import { TasksService } from './tasks.service';
 import { CreateTaskDto } from './dto/create-task.dto';
 import { UpdateTaskDto } from './dto/update-task.dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
-import { RateLimitGuard } from '../../common/guards/rate-limit.guard';
-import { RateLimit } from '../../common/decorators/rate-limit.decorator';
+import { RateLimitGuard, RateLimit } from '../../common/guards/rate-limit.guard';
 import { TaskFilterDto } from './dto/task-filter.dto';
 import { CommandBus, QueryBus } from '@nestjs/cqrs';
 import { CreateTaskCommand } from './commands/create-task.command';
@@ -30,7 +29,6 @@ import { BatchProcessTasksCommand } from './commands/batch-process-tasks.command
 @ApiTags('tasks')
 @Controller('tasks')
 @UseGuards(JwtAuthGuard, RateLimitGuard)
-@RateLimit({ limit: 100, windowMs: 60000 })
 @ApiBearerAuth()
 export class TasksController {
   constructor(
